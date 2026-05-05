@@ -1,0 +1,9 @@
+{
+    "name": "recoil-rcs",
+    "version": "1.0.0",
+    "dependencies": [
+        "spdlog",
+        "nlohmann-json",
+        "websocketpp"
+    ]
+}
