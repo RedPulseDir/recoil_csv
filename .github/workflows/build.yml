@@ -1,0 +1,51 @@
+name: Build Recoil RCS
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup vcpkg
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+        cd C:\vcpkg
+        .\bootstrap-vcpkg.bat
+        echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "CMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake" | Out-File -FilePath $env:GITHUB_ENV -Append
+    
+    - name: Install dependencies
+      run: |
+        C:\vcpkg\vcpkg install spdlog:x64-windows
+        C:\vcpkg\vcpkg install nlohmann-json:x64-windows
+        C:\vcpkg\vcpkg install websocketpp:x64-windows
+    
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+    
+    - name: Build
+      run: cmake --build build --config Release --parallel
+    
+    - name: Prepare artifacts
+      run: |
+        mkdir release
+        copy build\Release\RecoilRCS.exe release\
+        copy resources\config.json release\
+        xcopy resources\patterns release\patterns\ /E
+        echo "Place this folder anywhere. Run RecoilRCS.exe as admin." > release\README.txt
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: RecoilRCS-Win64
+        path: release/
